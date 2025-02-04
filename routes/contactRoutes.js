@@ -12,6 +12,15 @@ router.post("/", async (req, res) => {
     await user.save();
     console.log("Saved succesfully");
 
+
+    if (referralId) {
+      const referrer = await User.findOne({ referralId });
+      if (referrer) {
+        referrer.referralCount += 1;
+        await referrer.save();
+      }
+    }
+
     // // Nodemailer Setup
     // const transporter = nodemailer.createTransport({
     //   service: "gmail",
