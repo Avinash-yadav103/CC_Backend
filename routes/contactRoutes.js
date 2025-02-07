@@ -1,55 +1,32 @@
 const express = require("express");
 const router = express.Router();
 const User = require("../models/User");
-const nodemailer = require("nodemailer");
-
+const { v4: uuidv4 } = require("uuid");
 
 router.post("/", async (req, res) => {
-  const { name, email, phone, referralId } = req.body;
+  const { name, email, phone, usedreferralId ,city ,companyname ,companylocation  } = req.body;
+  const referralId = uuidv4().replace(/-/g, '').slice(0, 7); // Generate new referral ID of 10 letters only
 
   try {
-    const user = new User({ name, email, phone, referralId });
+    // Create new user
+    const user = new User({ name, email, phone, referralId, city, companyname ,companylocation });
     await user.save();
-    console.log("Saved succesfully");
+    console.log("User registered successfully with Referral ID:", referralId);
 
+    // Check if a valid referral ID was entered
+    if (usedreferralId) {
+      const referrer = await User.findOne({ referralId: usedreferralId });
 
-    if (referralId) {
-      const referrer = await User.findOne({ referralId });
       if (referrer) {
-        referrer.referralCount += 1;
+        referrer.referralCount += 1; // Increase referral count of referrer
         await referrer.save();
+        console.log("Referral count updated for referrer:", referrer.email);
+      } else {
+        console.log("Invalid referral ID entered, no matching referrer found.");
       }
     }
 
-    // // Nodemailer Setup
-    // const transporter = nodemailer.createTransport({
-    //   service: "gmail",
-    //   auth: {
-    //     user: 'blahblahavin@gmail.com',
-    //     pass: 'Avi@123456',
-    //   },
-    // });
-
-    // const mailOptions = {
-    //   from: 'blahblahavin@gmail.com',
-    //   to: email,
-    //   subject: "Registration Successful",
-    //   text: `Thank you for registering! Your referral ID: ${referralId}`,
-    // };
-
-    // // Send Email & Handle Errors Properly
-    // try {
-    //   await transporter.sendMail(mailOptions);
-    //   console.log("Email sent successfully");
-
-    //   // ✅ Send success response if everything works
-    //   return res.status(201).json({ message: "User registered and email sent successfully!" });
-    // } catch (emailError) {
-    //   console.error("Error sending email:", emailError);
-
-    //   // ❌ Return a JSON response so frontend doesn't throw an error
-    //   return res.status(500).json({ error: "User registered but failed to send email" });
-    // }
+    return res.status(201).json({ message: "User registered successfully!", referralId });
 
   } catch (dbError) {
     console.error("Database error:", dbError);
